@@ -13,91 +13,59 @@ from utils.network_data import NetworkGenerator
 from utils.file_io import FileManager
 from utils.report_gen import ReportGenerator
 
-# Import Algorithms
+# Import Algorithms (Core & Academic)
 from algorithms.routing import RoutingManager
 from algorithms.traversal import VirusSimulator
 from algorithms.throughput import BandwidthAnalyzer
 from algorithms.auditing import NetworkAuditor
 from algorithms.stp import STPManager
+from algorithms.graph_theory import GraphTheoryManager # <--- NEW IMPORT
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         # --- 1. CONFIGURATION ---
-        self.setWindowTitle("NetGraph Sentinel - Ultimate Edition")
+        self.setWindowTitle("NetGraph Sentinel - Ultimate Edition (Full Compliance)")
         self.resize(1366, 768)
         
-        # Cyberpunk Stylesheet (Đã Fix lỗi màu chữ ComboBox)
+        # Cyberpunk Stylesheet (Full Fix)
         self.setStyleSheet("""
-            QMainWindow { 
-                background-color: #050505; 
-            }
-            QLabel { 
-                color: #00FF00; 
-                font-family: 'Consolas'; 
-                font-size: 12px; 
-                font-weight: bold;
-            }
+            QMainWindow { background-color: #050505; }
+            QLabel { color: #00FF00; font-family: 'Consolas'; font-size: 12px; font-weight: bold; }
             QGroupBox { 
-                border: 1px solid #333; 
-                margin-top: 10px; 
-                color: #00FFFF; 
-                font-weight: bold; 
-                padding-top: 15px;
+                border: 1px solid #333; margin-top: 10px; color: #00FFFF; font-weight: bold; padding-top: 15px;
             }
-            QGroupBox::title { 
-                subcontrol-origin: margin; 
-                left: 10px; 
-                padding: 0 5px; 
-                background-color: #050505; 
-            }
+            QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; background-color: #050505; }
             QPushButton {
-                background-color: #1a1a1a; 
-                color: #E0E0E0; 
-                border: 1px solid #555;
-                padding: 8px; 
-                font-weight: bold; 
-                border-radius: 4px;
+                background-color: #1a1a1a; color: #E0E0E0; border: 1px solid #555;
+                padding: 6px; font-weight: bold; border-radius: 4px;
             }
-            QPushButton:hover { 
-                background-color: #333; 
-                color: #FFF; 
-                border-color: #FFF; 
-            }
+            QPushButton:hover { background-color: #333; color: #FFF; border-color: #FFF; }
             
-            /* --- FIX LỖI COMBOBOX TẠI ĐÂY --- */
             QComboBox { 
-                background-color: #111; 
-                color: #00FF00;  /* Chữ trong ô chọn màu Xanh lá */
-                border: 1px solid #555; 
-                padding: 5px; 
+                background-color: #111; color: #00FF00; border: 1px solid #555; padding: 5px; 
             }
-            QComboBox::drop-down { 
-                border: 0px; /* Bỏ viền mũi tên xuống cho đẹp */
-            }
-            
-            /* Quan trọng: Style cho danh sách xổ xuống */
+            QComboBox::drop-down { border: 0px; }
             QComboBox QAbstractItemView {
-                background-color: #050505; /* Nền danh sách: Đen */
-                color: #FFFFFF;            /* Chữ danh sách: Trắng (Để dễ đọc) */
-                border: 1px solid #333;
-                selection-background-color: #003300; /* Nền khi di chuột: Xanh tối */
-                selection-color: #00FF00;            /* Chữ khi di chuột: Xanh sáng */
+                background-color: #050505; color: #FFFFFF; border: 1px solid #333;
+                selection-background-color: #003300; selection-color: #00FF00;
             }
-            
             QFrame { border: none; }
         """)
 
         # --- 2. LOGIC INITIALIZATION ---
         self.generator = NetworkGenerator()
         
-        # Algorithms
+        # Core Algorithms
         self.router_logic = RoutingManager()
         self.virus_logic = VirusSimulator()
         self.bandwidth_logic = BandwidthAnalyzer()
         self.auditor_logic = NetworkAuditor()
         self.stp_logic = STPManager()
+        
+        # Academic Algorithms (NEW)
+        self.acad_logic = GraphTheoryManager()
 
         self.current_graph = None 
         
@@ -117,16 +85,18 @@ class MainWindow(QMainWindow):
     def _create_menu_bar(self):
         """Tạo thanh Menu phía trên."""
         menu_bar = self.menuBar()
+        # Style cho MenuBar để đồng bộ Cyberpunk
         menu_bar.setStyleSheet("""
-            QMenuBar { background-color: #111; color: #FFF; border-bottom: 1px solid #333; }
-            QMenuBar::item { padding: 5px 10px; background-color: transparent; }
-            QMenuBar::item:selected { background-color: #333; }
+            QMenuBar { background-color: #111; color: #FFF; border-bottom: 1px solid #333; font-weight: bold; }
+            QMenuBar::item { padding: 8px 15px; background-color: transparent; }
+            QMenuBar::item:selected { background-color: #00FF00; color: #000; }
             QMenu { background-color: #111; color: #FFF; border: 1px solid #555; }
-            QMenu::item:selected { background-color: #333; }
+            QMenu::item { padding: 8px 20px; }
+            QMenu::item:selected { background-color: #333; color: #00FF00; border-left: 2px solid #00FF00; }
         """)
 
-        # File Menu
-        file_menu = menu_bar.addMenu("File")
+        # === 1. File Menu ===
+        file_menu = menu_bar.addMenu("FILE")
         
         action_open = QAction("Open Topology (.json)", self)
         action_open.setShortcut("Ctrl+O")
@@ -150,6 +120,31 @@ class MainWindow(QMainWindow):
         action_exit = QAction("Exit", self)
         action_exit.triggered.connect(self.close)
         file_menu.addAction(action_exit)
+
+        # === 2. Academic Menu (NEW - Đáp ứng yêu cầu còn thiếu) ===
+        acad_menu = menu_bar.addMenu("ACADEMIC TOOLS")
+
+        # 4. Duyệt DFS
+        action_dfs = QAction("Run DFS Traversal", self)
+        action_dfs.triggered.connect(self.on_run_dfs)
+        acad_menu.addAction(action_dfs)
+
+        # 5. Kiểm tra 2 phía
+        action_bipartite = QAction("Check Bipartite Graph", self)
+        action_bipartite.triggered.connect(self.on_check_bipartite)
+        acad_menu.addAction(action_bipartite)
+
+        # 6. Biểu diễn đồ thị
+        action_reps = QAction("View Graph Representations (Matrix/List)", self)
+        action_reps.triggered.connect(self.on_view_representations)
+        acad_menu.addAction(action_reps)
+
+        acad_menu.addSeparator()
+
+        # 7.4 & 7.5 Euler
+        action_euler = QAction("Analyze Eulerian Path/Circuit", self)
+        action_euler.triggered.connect(self.on_find_euler)
+        acad_menu.addAction(action_euler)
 
     def _init_layout(self):
         """Khởi tạo bố cục chính."""
@@ -244,7 +239,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(control_panel)
         main_layout.addWidget(self.canvas, stretch=1)
 
-    # --- EVENT HANDLERS ---
+    # --- EVENT HANDLERS (CORE) ---
 
     def on_generate_network(self):
         """Sinh mạng mới."""
@@ -334,6 +329,43 @@ class MainWindow(QMainWindow):
         self.lbl_stats.setText(f"Infection Spreading... Step {self.current_step_index + 1}")
         self.current_step_index += 1
 
+    # --- EVENT HANDLERS (ACADEMIC TOOLS) ---
+
+    def _show_academic_result(self, title, content):
+        """Hàm hỗ trợ hiển thị kết quả học thuật bằng Dialog."""
+        # Tận dụng AuditReportDialog nhưng thay đổi dữ liệu đầu vào một chút
+        # Vì AuditReportDialog mong đợi một dict, ta "hack" nhẹ để nó hiển thị text raw
+        dummy_report = {
+            "is_connected": False, "connected_components": 0, "critical_links": [], "average_redundancy": 0
+        }
+        dialog = AuditReportDialog(dummy_report, self)
+        dialog.setWindowTitle(title)
+        # Ghi đè nội dung text trực tiếp
+        dialog.txt_content.setText(content)
+        dialog.exec()
+
+    def on_run_dfs(self):
+        """Xử lý yêu cầu duyệt DFS."""
+        # Lấy nút đang chọn ở Source làm nút bắt đầu DFS
+        start_node = self.combo_source.currentText()
+        result = self.acad_logic.run_dfs(self.current_graph, start_node)
+        self._show_academic_result("DFS Traversal Result", result)
+
+    def on_check_bipartite(self):
+        """Xử lý kiểm tra đồ thị 2 phía."""
+        result = self.acad_logic.check_bipartite(self.current_graph)
+        self._show_academic_result("Bipartite Graph Check", result)
+
+    def on_view_representations(self):
+        """Xử lý xem các biểu diễn đồ thị."""
+        result = self.acad_logic.get_representations(self.current_graph)
+        self._show_academic_result("Graph Representations", result)
+
+    def on_find_euler(self):
+        """Xử lý tìm chu trình Euler."""
+        result = self.acad_logic.find_eulerian(self.current_graph)
+        self._show_academic_result("Eulerian Path/Circuit Analysis", result)
+
     # --- FILE OPERATIONS ---
 
     def on_save_file(self):
@@ -357,7 +389,7 @@ class MainWindow(QMainWindow):
     def on_export_report(self):
         file_path, _ = QFileDialog.getSaveFileName(self, "Export Report", "audit_log.txt", "Text (*.txt)")
         if file_path:
-            stats = self.generator.get_topology_stats() # Note: Should recalc for loaded graph ideally
+            stats = self.generator.get_topology_stats()
             audit = self.auditor_logic.perform_full_audit(self.current_graph)
             ok, msg = ReportGenerator.export_summary(self.current_graph, stats, audit, file_path)
             if ok: QMessageBox.information(self, "Success", f"Report exported to {file_path}")
