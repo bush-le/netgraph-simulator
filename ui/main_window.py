@@ -1,0 +1,363 @@
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+                             QPushButton, QLabel, QFrame, QMessageBox, QComboBox, 
+                             QGroupBox, QFileDialog, QMenuBar, QMenu)
+from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt, QTimer
+
+# Import Views
+from ui.network_canvas import NetworkCanvas
+from ui.dialogs import AuditReportDialog
+
+# Import Models & Utils
+from utils.network_data import NetworkGenerator
+from utils.file_io import FileManager
+from utils.report_gen import ReportGenerator
+
+# Import Algorithms
+from algorithms.routing import RoutingManager
+from algorithms.traversal import VirusSimulator
+from algorithms.throughput import BandwidthAnalyzer
+from algorithms.auditing import NetworkAuditor
+from algorithms.stp import STPManager
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # --- 1. CONFIGURATION ---
+        self.setWindowTitle("NetGraph Sentinel - Ultimate Edition")
+        self.resize(1366, 768)
+        
+        # Cyberpunk Stylesheet (Đã Fix lỗi màu chữ ComboBox)
+        self.setStyleSheet("""
+            QMainWindow { 
+                background-color: #050505; 
+            }
+            QLabel { 
+                color: #00FF00; 
+                font-family: 'Consolas'; 
+                font-size: 12px; 
+                font-weight: bold;
+            }
+            QGroupBox { 
+                border: 1px solid #333; 
+                margin-top: 10px; 
+                color: #00FFFF; 
+                font-weight: bold; 
+                padding-top: 15px;
+            }
+            QGroupBox::title { 
+                subcontrol-origin: margin; 
+                left: 10px; 
+                padding: 0 5px; 
+                background-color: #050505; 
+            }
+            QPushButton {
+                background-color: #1a1a1a; 
+                color: #E0E0E0; 
+                border: 1px solid #555;
+                padding: 8px; 
+                font-weight: bold; 
+                border-radius: 4px;
+            }
+            QPushButton:hover { 
+                background-color: #333; 
+                color: #FFF; 
+                border-color: #FFF; 
+            }
+            
+            /* --- FIX LỖI COMBOBOX TẠI ĐÂY --- */
+            QComboBox { 
+                background-color: #111; 
+                color: #00FF00;  /* Chữ trong ô chọn màu Xanh lá */
+                border: 1px solid #555; 
+                padding: 5px; 
+            }
+            QComboBox::drop-down { 
+                border: 0px; /* Bỏ viền mũi tên xuống cho đẹp */
+            }
+            
+            /* Quan trọng: Style cho danh sách xổ xuống */
+            QComboBox QAbstractItemView {
+                background-color: #050505; /* Nền danh sách: Đen */
+                color: #FFFFFF;            /* Chữ danh sách: Trắng (Để dễ đọc) */
+                border: 1px solid #333;
+                selection-background-color: #003300; /* Nền khi di chuột: Xanh tối */
+                selection-color: #00FF00;            /* Chữ khi di chuột: Xanh sáng */
+            }
+            
+            QFrame { border: none; }
+        """)
+
+        # --- 2. LOGIC INITIALIZATION ---
+        self.generator = NetworkGenerator()
+        
+        # Algorithms
+        self.router_logic = RoutingManager()
+        self.virus_logic = VirusSimulator()
+        self.bandwidth_logic = BandwidthAnalyzer()
+        self.auditor_logic = NetworkAuditor()
+        self.stp_logic = STPManager()
+
+        self.current_graph = None 
+        
+        # Animation State
+        self.simulation_timer = QTimer()
+        self.simulation_timer.timeout.connect(self.run_simulation_step)
+        self.infection_steps = []
+        self.current_step_index = 0
+
+        # --- 3. UI INITIALIZATION ---
+        self._create_menu_bar()
+        self._init_layout()
+        
+        # Start
+        self.on_generate_network()
+
+    def _create_menu_bar(self):
+        """Tạo thanh Menu phía trên."""
+        menu_bar = self.menuBar()
+        menu_bar.setStyleSheet("""
+            QMenuBar { background-color: #111; color: #FFF; border-bottom: 1px solid #333; }
+            QMenuBar::item { padding: 5px 10px; background-color: transparent; }
+            QMenuBar::item:selected { background-color: #333; }
+            QMenu { background-color: #111; color: #FFF; border: 1px solid #555; }
+            QMenu::item:selected { background-color: #333; }
+        """)
+
+        # File Menu
+        file_menu = menu_bar.addMenu("File")
+        
+        action_open = QAction("Open Topology (.json)", self)
+        action_open.setShortcut("Ctrl+O")
+        action_open.triggered.connect(self.on_open_file)
+        file_menu.addAction(action_open)
+
+        action_save = QAction("Save Topology (.json)", self)
+        action_save.setShortcut("Ctrl+S")
+        action_save.triggered.connect(self.on_save_file)
+        file_menu.addAction(action_save)
+        
+        file_menu.addSeparator()
+
+        action_export = QAction("Export Report (.txt)", self)
+        action_export.setShortcut("Ctrl+E")
+        action_export.triggered.connect(self.on_export_report)
+        file_menu.addAction(action_export)
+        
+        file_menu.addSeparator()
+        
+        action_exit = QAction("Exit", self)
+        action_exit.triggered.connect(self.close)
+        file_menu.addAction(action_exit)
+
+    def _init_layout(self):
+        """Khởi tạo bố cục chính."""
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        main_layout = QHBoxLayout(main_widget)
+        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setSpacing(5)
+
+        # === LEFT PANEL ===
+        control_panel = QFrame()
+        control_panel.setFixedWidth(300)
+        control_panel.setStyleSheet("background-color: #0A0A0A; border-right: 1px solid #333;")
+        panel_layout = QVBoxLayout(control_panel)
+        panel_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Header
+        lbl_title = QLabel("NETGRAPH\nSENTINEL")
+        lbl_title.setStyleSheet("font-size: 24px; color: #FF00FF; font-weight: bold; margin-bottom: 10px;")
+        lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        panel_layout.addWidget(lbl_title)
+
+        # Group 1: Topology
+        g_topo = QGroupBox("1. TOPOLOGY CONTROL")
+        l_topo = QVBoxLayout()
+        self.btn_gen = QPushButton("Initialize Network")
+        self.btn_gen.setStyleSheet("color: #00FFFF; border: 1px solid #00FFFF;")
+        self.btn_gen.clicked.connect(self.on_generate_network)
+        l_topo.addWidget(self.btn_gen)
+        
+        self.btn_stp = QPushButton("Activate STP (Anti-Loop)")
+        self.btn_stp.setStyleSheet("color: #ADFF2F; border: 1px solid #ADFF2F;")
+        self.btn_stp.clicked.connect(self.on_run_stp)
+        l_topo.addWidget(self.btn_stp)
+        
+        self.btn_audit = QPushButton("Run System Audit")
+        self.btn_audit.setStyleSheet("color: #00FF00; border: 1px dashed #00FF00;")
+        self.btn_audit.clicked.connect(self.on_run_audit)
+        l_topo.addWidget(self.btn_audit)
+        
+        g_topo.setLayout(l_topo)
+        panel_layout.addWidget(g_topo)
+
+        # Group 2: Traffic & Analysis
+        g_ops = QGroupBox("2. TRAFFIC ANALYSIS")
+        l_ops = QVBoxLayout()
+        
+        l_ops.addWidget(QLabel("Source Node:"))
+        self.combo_source = QComboBox()
+        l_ops.addWidget(self.combo_source)
+        
+        l_ops.addWidget(QLabel("Target Node:"))
+        self.combo_target = QComboBox()
+        l_ops.addWidget(self.combo_target)
+        
+        h_btn_layout = QHBoxLayout()
+        self.btn_trace = QPushButton("Trace Route")
+        self.btn_trace.clicked.connect(self.on_trace_route)
+        self.btn_bw = QPushButton("Max Bandwidth")
+        self.btn_bw.setStyleSheet("color: #FFA500; border: 1px solid #FFA500;")
+        self.btn_bw.clicked.connect(self.on_analyze_bandwidth)
+        h_btn_layout.addWidget(self.btn_trace)
+        h_btn_layout.addWidget(self.btn_bw)
+        l_ops.addLayout(h_btn_layout)
+        
+        g_ops.setLayout(l_ops)
+        panel_layout.addWidget(g_ops)
+
+        # Group 3: Security
+        g_sec = QGroupBox("3. THREAT SIMULATION")
+        l_sec = QVBoxLayout()
+        l_sec.addWidget(QLabel("Patient Zero:"))
+        self.combo_virus = QComboBox()
+        l_sec.addWidget(self.combo_virus)
+        
+        self.btn_virus = QPushButton("⚠️ EXECUTE VIRUS ATTACK")
+        self.btn_virus.setStyleSheet("background-color: #330000; color: #FF0000; border: 1px solid #FF0000; font-weight: bold;")
+        self.btn_virus.clicked.connect(self.on_simulate_virus)
+        l_sec.addWidget(self.btn_virus)
+        g_sec.setLayout(l_sec)
+        panel_layout.addWidget(g_sec)
+
+        # Status Log
+        self.lbl_stats = QLabel("System Ready...")
+        self.lbl_stats.setWordWrap(True)
+        self.lbl_stats.setStyleSheet("color: #888; font-size: 11px; margin-top: 10px;")
+        panel_layout.addWidget(self.lbl_stats)
+
+        # === RIGHT PANEL (CANVAS) ===
+        self.canvas = NetworkCanvas()
+        
+        main_layout.addWidget(control_panel)
+        main_layout.addWidget(self.canvas, stretch=1)
+
+    # --- EVENT HANDLERS ---
+
+    def on_generate_network(self):
+        """Sinh mạng mới."""
+        self.simulation_timer.stop()
+        self.current_graph = self.generator.generate_hierarchical_network()
+        self._refresh_ui_data()
+        self.lbl_stats.setText("Network Initialized. Ready for commands.")
+
+    def _refresh_ui_data(self):
+        """Vẽ lại đồ thị và cập nhật ComboBox."""
+        if self.current_graph:
+            self.canvas.draw_network(self.current_graph)
+            nodes = sorted(list(self.current_graph.nodes()))
+            
+            # Update Combos without triggering events
+            for c in [self.combo_source, self.combo_target, self.combo_virus]:
+                c.blockSignals(True)
+                c.clear()
+                c.addItems(nodes)
+                c.blockSignals(False)
+
+    def on_trace_route(self):
+        src, dst = self.combo_source.currentText(), self.combo_target.currentText()
+        if src == dst or not src: return
+        
+        path, lat = self.router_logic.find_shortest_path(self.current_graph, src, dst)
+        if path:
+            self.canvas.highlight_path(path)
+            self.lbl_stats.setText(f"[ROUTING RESULT]\nPath: {' -> '.join(path)}\nTotal Latency: {lat} ms")
+        else:
+            QMessageBox.warning(self, "Unreachable", "No path found between selected nodes.")
+
+    def on_analyze_bandwidth(self):
+        src, dst = self.combo_source.currentText(), self.combo_target.currentText()
+        if src == dst or not src: return
+
+        max_flow, _ = self.bandwidth_logic.analyze_max_bandwidth(self.current_graph, src, dst)
+        self.canvas.highlight_path([src, dst]) # Highlight endpoints
+        self.lbl_stats.setText(f"[BANDWIDTH CHECK]\nFrom: {src}\nTo: {dst}\nMax Capacity: {max_flow} Mbps")
+
+    def on_run_stp(self):
+        active, blocked = self.stp_logic.compute_spanning_tree(self.current_graph)
+        self.canvas.draw_network(self.current_graph) # Reset visual
+        
+        # Vẽ lại STP overlay thủ công trên canvas để hiển thị blocking
+        import networkx as nx
+        pos = nx.spring_layout(self.current_graph, seed=42, k=0.5, iterations=50)
+        
+        # Vẽ Active (Green)
+        nx.draw_networkx_edges(self.current_graph, pos, ax=self.canvas.ax, edgelist=active, 
+                               edge_color='#00FF00', width=2.0)
+        # Vẽ Blocked (Red Dashed)
+        nx.draw_networkx_edges(self.current_graph, pos, ax=self.canvas.ax, edgelist=blocked, 
+                               edge_color='#FF0000', style='dashed', width=1.0, alpha=0.6)
+        
+        self.canvas.canvas.draw()
+        self.lbl_stats.setText(f"[STP MODE]\nActive Links: {len(active)}\nBlocked Links: {len(blocked)}\nLoop-free topology enforced.")
+
+    def on_run_audit(self):
+        report = self.auditor_logic.perform_full_audit(self.current_graph)
+        dialog = AuditReportDialog(report, self)
+        dialog.exec()
+
+    def on_simulate_virus(self):
+        start_node = self.combo_virus.currentText()
+        if not start_node: return
+        
+        self.infection_steps = self.virus_logic.simulate_spread(self.current_graph, start_node)
+        if self.infection_steps:
+            self.canvas.draw_network(self.current_graph) # Reset colors
+            self.current_step_index = 0
+            self.lbl_stats.setText(f"⚠️ VIRUS DETECTED at {start_node}!")
+            self.simulation_timer.start(500)
+
+    def run_simulation_step(self):
+        if self.current_step_index >= len(self.infection_steps):
+            self.simulation_timer.stop()
+            self.lbl_stats.setText("NETWORK COMPROMISED.")
+            return
+
+        newly_infected = self.infection_steps[self.current_step_index]
+        for node in newly_infected:
+            self.current_graph.nodes[node]['color'] = '#FF0000' # Red
+            self.current_graph.nodes[node]['size'] = 600
+            
+        self.canvas.draw_network(self.current_graph)
+        self.lbl_stats.setText(f"Infection Spreading... Step {self.current_step_index + 1}")
+        self.current_step_index += 1
+
+    # --- FILE OPERATIONS ---
+
+    def on_save_file(self):
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Topology", "network_config.json", "JSON (*.json)")
+        if file_path:
+            ok, msg = FileManager.save_network_to_json(self.current_graph, file_path)
+            if ok: self.lbl_stats.setText(f"Saved: {file_path}")
+            else: QMessageBox.critical(self, "Error", msg)
+
+    def on_open_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open Topology", "", "JSON (*.json)")
+        if file_path:
+            G, msg = FileManager.load_network_from_json(file_path)
+            if G:
+                self.current_graph = G
+                self._refresh_ui_data()
+                self.lbl_stats.setText(f"Loaded: {file_path}")
+            else:
+                QMessageBox.critical(self, "Error", msg)
+
+    def on_export_report(self):
+        file_path, _ = QFileDialog.getSaveFileName(self, "Export Report", "audit_log.txt", "Text (*.txt)")
+        if file_path:
+            stats = self.generator.get_topology_stats() # Note: Should recalc for loaded graph ideally
+            audit = self.auditor_logic.perform_full_audit(self.current_graph)
+            ok, msg = ReportGenerator.export_summary(self.current_graph, stats, audit, file_path)
+            if ok: QMessageBox.information(self, "Success", f"Report exported to {file_path}")
