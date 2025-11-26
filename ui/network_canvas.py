@@ -37,6 +37,10 @@ class NetworkCanvas(QWidget):
 
         self.current_G = None
         self.current_pos = None
+        
+        # === THÊM DÒNG NÀY ===
+        # Danh sách lưu các đối tượng highlight để xóa sau này
+        self.highlight_artists = [] 
 
     def draw_network(self, G):
         """Vẽ mạng và phân loại hình dáng theo thiết bị."""
@@ -62,6 +66,13 @@ class NetworkCanvas(QWidget):
                     edge_colors.append(d.get('color'))
                     # Nếu là màu đỏ virus, vẽ dày hơn
                     edge_widths.append(3.0 if d.get('color') == '#FF0000' else 1.5)
+                # Ưu tiên 1.5: Trạng thái STP
+                elif d.get('stp_state') == 'forwarding':
+                    edge_colors.append('#00FF00') # Green Neon
+                    edge_widths.append(2.0)
+                elif d.get('stp_state') == 'blocking':
+                    edge_colors.append('#FF0000') # Red
+                    edge_widths.append(1.0)
                 # Ưu tiên 2: Cáp quang (Fiber)
                 elif d.get('type') == 'Fiber':
                     edge_colors.append('#00FFFF') # Cyan Neon
@@ -71,7 +82,10 @@ class NetworkCanvas(QWidget):
                     edge_colors.append('#555555') # Xám tối
                     edge_widths.append(1.0)
 
-            edge_styles = [d.get('style', 'solid') for u,v,d in G.edges(data=True)]
+            # Thêm style cho cạnh bị block
+            edge_styles = []
+            for u,v,d in G.edges(data=True):
+                edge_styles.append('dashed' if d.get('stp_state') == 'blocking' else d.get('style', 'solid'))
 
             nx.draw_networkx_edges(G, pos, ax=self.ax, 
                                    edge_color=edge_colors, 
@@ -121,15 +135,47 @@ class NetworkCanvas(QWidget):
             import traceback
             traceback.print_exc()
 
+    # === THÊM HÀM NÀY VÀO ===
+    def clear_highlights(self):
+        """Xóa sạch các đường highlight cũ trên canvas."""
+        # Nếu danh sách rỗng thì không cần làm gì
+        if not self.highlight_artists:
+            return
+
+        # Duyệt qua danh sách và xóa từng đối tượng khỏi trục vẽ
+        for artist in self.highlight_artists:
+            try:
+                artist.remove()
+            except ValueError:
+                # Bỏ qua lỗi nếu đối tượng đã bị xóa từ trước đó
+                pass
+        
+        # Làm rỗng danh sách sau khi xóa
+        self.highlight_artists.clear()
+        # Vẽ lại canvas để cập nhật thay đổi (xóa hình cũ đi)
+        self.canvas.draw()
+    # =========================
+
     def highlight_path(self, path_nodes):
         """Highlight đường đi."""
+        # === 1. GỌI HÀM XÓA CŨ TRƯỚC ===
+        self.clear_highlights()
+        # ===============================
+        
         if not self.current_G or not path_nodes or not self.current_pos: return
         pos = self.current_pos
 
         # Highlight Edges
         path_edges = list(zip(path_nodes, path_nodes[1:]))
-        nx.draw_networkx_edges(self.current_G, pos, ax=self.ax,
-                               edgelist=path_edges, edge_color='#FF00FF', width=3.0, alpha=1.0)
+        
+        # === 2. LƯU LẠI ĐỐI TƯỢNG DÂY ===
+        edge_artists = nx.draw_networkx_edges(self.current_G, pos, ax=self.ax,
+                                              edgelist=path_edges, 
+                                              edge_color='#FF00FF', 
+                                              width=3.0, alpha=1.0)
+        if edge_artists:
+            self.highlight_artists.append(edge_artists)
+        # ================================
         
         # Highlight Nodes
         for node in path_nodes:
@@ -138,11 +184,16 @@ class NetworkCanvas(QWidget):
             shape = SHAPE_MAP.get(n_type, 'o')
             size = node_data.get('size', 300)
 
-            nx.draw_networkx_nodes(self.current_G, pos, ax=self.ax,
-                                   nodelist=[node],
-                                   node_shape=shape,
-                                   node_color='#FF00FF',
-                                   node_size=size + 150,
-                                   edgecolors='#FFFFFF',
-                                   linewidths=2.0)
+            # === 3. LƯU LẠI ĐỐI TƯỢNG NODE ===
+            node_artist = nx.draw_networkx_nodes(self.current_G, pos, ax=self.ax,
+                                                 nodelist=[node],
+                                                 node_shape=shape,
+                                                 node_color='#FF00FF',
+                                                 node_size=size + 150,
+                                                 edgecolors='#FFFFFF',
+                                                 linewidths=2.0)
+            if node_artist:
+                self.highlight_artists.append(node_artist)
+            # =================================
+
         self.canvas.draw()

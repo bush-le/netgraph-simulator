@@ -283,20 +283,19 @@ class MainWindow(QMainWindow):
 
     def on_run_stp(self):
         active, blocked = self.stp_logic.compute_spanning_tree(self.current_graph)
-        self.canvas.draw_network(self.current_graph) # Reset visual
         
-        # Vẽ lại STP overlay thủ công trên canvas để hiển thị blocking
-        import networkx as nx
-        pos = nx.spring_layout(self.current_graph, seed=42, k=0.5, iterations=50)
+        # Xóa trạng thái STP cũ (nếu có)
+        for u, v, d in self.current_graph.edges(data=True):
+            d.pop('stp_state', None)
+
+        # Gán trạng thái STP mới vào thuộc tính của cạnh
+        for u, v in active:
+            self.current_graph[u][v]['stp_state'] = 'forwarding'
+        for u, v in blocked:
+            self.current_graph[u][v]['stp_state'] = 'blocking'
         
-        # Vẽ Active (Green)
-        nx.draw_networkx_edges(self.current_graph, pos, ax=self.canvas.ax, edgelist=active, 
-                               edge_color='#00FF00', width=2.0)
-        # Vẽ Blocked (Red Dashed)
-        nx.draw_networkx_edges(self.current_graph, pos, ax=self.canvas.ax, edgelist=blocked, 
-                               edge_color='#FF0000', style='dashed', width=1.0, alpha=0.6)
-        
-        self.canvas.canvas.draw()
+        # Yêu cầu canvas vẽ lại với dữ liệu đồ thị đã được cập nhật
+        self.canvas.draw_network(self.current_graph)
         self.lbl_stats.setText(f"[STP MODE]\nActive Links: {len(active)}\nBlocked Links: {len(blocked)}\nLoop-free topology enforced.")
 
     def on_run_audit(self):
