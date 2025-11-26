@@ -74,6 +74,7 @@ class MainWindow(QMainWindow):
         self.simulation_timer.timeout.connect(self.run_simulation_step)
         self.infection_steps = []
         self.current_step_index = 0
+        self.infected_history = set() # <--- THÊM DÒNG NÀY
 
         # --- 3. UI INITIALIZATION ---
         self._create_menu_bar()
@@ -309,24 +310,45 @@ class MainWindow(QMainWindow):
         
         self.infection_steps = self.virus_logic.simulate_spread(self.current_graph, start_node)
         if self.infection_steps:
-            self.canvas.draw_network(self.current_graph) # Reset colors
+            self.canvas.draw_network(self.current_graph) # Reset visual
             self.current_step_index = 0
+            self.infected_history.clear() # <--- THÊM DÒNG NÀY (Reset lịch sử)
             self.lbl_stats.setText(f"⚠️ VIRUS DETECTED at {start_node}!")
             self.simulation_timer.start(500)
 
     def run_simulation_step(self):
+        """Thực hiện một bước mô phỏng lây lan virus."""
         if self.current_step_index >= len(self.infection_steps):
             self.simulation_timer.stop()
-            self.lbl_stats.setText("NETWORK COMPROMISED.")
+            self.lbl_stats.setText("NETWORK COMPROMISED. Simulation Complete.")
             return
 
-        newly_infected = self.infection_steps[self.current_step_index]
-        for node in newly_infected:
+        newly_infected_nodes = self.infection_steps[self.current_step_index]
+        
+        # Xử lý cho bước > 0 (Không phải Patient Zero)
+        if self.current_step_index > 0:
+            # Với mỗi node mới bị nhiễm, tìm xem nó bị lây từ node hàng xóm nào
+            for new_node in newly_infected_nodes:
+                # Lấy danh sách hàng xóm của node mới nhiễm
+                neighbors = list(self.current_graph.neighbors(new_node))
+                for neighbor in neighbors:
+                    # Nếu hàng xóm này đã nằm trong lịch sử nhiễm trước đó -> Đây là nguồn lây
+                    if neighbor in self.infected_history:
+                        # Đánh dấu cạnh nối giữa chúng là màu ĐỎ
+                        if self.current_graph.has_edge(neighbor, new_node):
+                            self.current_graph[neighbor][new_node]['color'] = '#FF0000'
+
+        # Tô màu ĐỎ cho các node mới nhiễm và thêm vào lịch sử
+        for node in newly_infected_nodes:
             self.current_graph.nodes[node]['color'] = '#FF0000' # Red
-            self.current_graph.nodes[node]['size'] = 600
+            self.current_graph.nodes[node]['size'] = 600 # Phình to ra
+            self.infected_history.add(node) # Ghi nhận đã nhiễm
             
+        # Vẽ lại đồ thị với màu sắc mới (cả node và edge)
         self.canvas.draw_network(self.current_graph)
-        self.lbl_stats.setText(f"Infection Spreading... Step {self.current_step_index + 1}")
+        
+        nodes_str = ", ".join(newly_infected_nodes)
+        self.lbl_stats.setText(f"Step {self.current_step_index + 1}: Virus spreading to {nodes_str}...")
         self.current_step_index += 1
 
     # --- EVENT HANDLERS (ACADEMIC TOOLS) ---

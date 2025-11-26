@@ -54,8 +54,23 @@ class NetworkCanvas(QWidget):
             pos = self.current_pos
 
             # --- LAYER 1: DÂY CÁP (EDGES) - ZORDER=1 ---
-            edge_colors = ['#00FFFF' if d.get('type') == 'Fiber' else '#555555' for u,v,d in G.edges(data=True)]
-            edge_widths = [2.0 if d.get('type') == 'Fiber' else 1.0 for u,v,d in G.edges(data=True)]
+            edge_colors = []
+            edge_widths = []
+            for u, v, d in G.edges(data=True):
+                # Ưu tiên 1: Nếu cạnh có thuộc tính 'color' đặc biệt (ví dụ: bị nhiễm virus)
+                if d.get('color'):
+                    edge_colors.append(d.get('color'))
+                    # Nếu là màu đỏ virus, vẽ dày hơn
+                    edge_widths.append(3.0 if d.get('color') == '#FF0000' else 1.5)
+                # Ưu tiên 2: Cáp quang (Fiber)
+                elif d.get('type') == 'Fiber':
+                    edge_colors.append('#00FFFF') # Cyan Neon
+                    edge_widths.append(2.0)
+                # Mặc định: Cáp thường
+                else:
+                    edge_colors.append('#555555') # Xám tối
+                    edge_widths.append(1.0)
+
             edge_styles = [d.get('style', 'solid') for u,v,d in G.edges(data=True)]
 
             nx.draw_networkx_edges(G, pos, ax=self.ax, 
