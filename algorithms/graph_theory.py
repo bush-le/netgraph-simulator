@@ -32,20 +32,56 @@ class GraphTheoryManager:
         return result
 
     def check_bipartite(self, G):
-        """5. Kiểm tra đồ thị 2 phía (Bipartite Graph)."""
+        """5. Kiểm tra đồ thị 2 phía (Bipartite Graph) & Giải thích chi tiết."""
         if G.number_of_nodes() == 0: return "Đồ thị rỗng."
         
         is_bip = nx.is_bipartite(G)
-        result = f"Kết quả kiểm tra Đồ thị 2 phía (Bipartite):\n"
+        result = f"KẾT QUẢ KIỂM TRA ĐỒ THỊ 2 PHÍA (BIPARTITE):\n"
         result += f" => {str(is_bip).upper()}\n\n"
         
         if is_bip:
-            result += "Giải thích: Các đỉnh của đồ thị có thể chia làm 2 tập hợp rời nhau sao cho mọi cạnh đều nối 2 đỉnh thuộc 2 tập khác nhau."
-            # Nếu muốn, có thể hiển thị 2 tập đó:
-            # sets = nx.bipartite.sets(G)
-            # result += f"\nSet A: {sets[0]}\nSet B: {sets[1]}"
+            # Nếu là 2 phía, liệt kê 2 tập hợp
+            result += "GIẢI THÍCH: Đồ thị CÓ THỂ chia làm 2 tập đỉnh riêng biệt (A và B) sao cho không có cạnh nào nối 2 đỉnh cùng một tập.\n\n"
+            try:
+                sets = nx.bipartite.sets(G)
+                # Giới hạn hiển thị nếu danh sách quá dài
+                set_a = list(sets[0])
+                set_b = list(sets[1])
+                result += f"[TẬP A - {len(set_a)} node]: {str(set_a[:10])}..." if len(set_a) > 10 else f"[TẬP A]: {str(set_a)}"
+                result += "\n"
+                result += f"[TẬP B - {len(set_b)} node]: {str(set_b[:10])}..." if len(set_b) > 10 else f"[TẬP B]: {str(set_b)}"
+            except:
+                pass
         else:
-            result += "Giải thích: Đồ thị chứa ít nhất một chu trình lẻ (odd cycle), nên không thể phân chia thành 2 phía."
+            # Nếu KHÔNG phải 2 phía, tìm bằng chứng (Chu trình lẻ)
+            result += "GIẢI THÍCH: Đồ thị chứa CHU TRÌNH LẺ (Odd Cycle). Theo định lý Kőnig, đồ thị chứa chu trình lẻ không thể là đồ thị 2 phía.\n\n"
+            result += "[BẰNG CHỨNG - CÁC NÚT GÂY XUNG ĐỘT]:\n"
+            
+            try:
+                # Tìm cơ sở chu trình (Cycle Basis)
+                cycles = nx.cycle_basis(G)
+                found_odd = False
+                for cycle in cycles:
+                    if len(cycle) % 2 != 0:
+                        # Tìm thấy chu trình lẻ!
+                        path_str = " -> ".join(cycle) + f" -> {cycle[0]}"
+                        result += f"(!) Phát hiện chu trình độ dài {len(cycle)} (Lẻ):\n    {path_str}\n"
+                        
+                        # Giải thích logic tô màu
+                        result += "\nLý do xung đột màu:\n"
+                        result += f"  1. Giả sử {cycle[0]} màu ĐỎ.\n"
+                        result += f"  2. Thì {cycle[1]} phải màu XANH.\n"
+                        if len(cycle) == 3:
+                            result += f"  3. Thì {cycle[2]} phải màu ĐỎ.\n"
+                            result += f"  => NHƯNG {cycle[2]} nối lại về {cycle[0]} (cũng ĐỎ). XUNG ĐỘT!"
+                        
+                        found_odd = True
+                        break # Chỉ cần chỉ ra 1 cái là đủ chứng minh
+                
+                if not found_odd:
+                    result += "(Không tìm thấy chu trình lẻ đơn giản trong cơ sở, nhưng cấu trúc phức tạp gây xung đột)."
+            except Exception as e:
+                result += f"Không thể trích xuất chu trình cụ thể: {str(e)}"
             
         return result
 
