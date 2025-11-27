@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # --- 1. CONFIGURATION ---
-        self.setWindowTitle("NetGraph Sentinel - Ultimate Edition (Full Compliance)")
+        self.setWindowTitle("NetGraph Sentinel - Ultimate Edition (Multi-Topology)")
         self.resize(1366, 768)
         
         # Cyberpunk Stylesheet (Full Fix)
@@ -171,6 +171,20 @@ class MainWindow(QMainWindow):
         # Group 1: Topology
         g_topo = QGroupBox("1. TOPOLOGY CONTROL")
         l_topo = QVBoxLayout()
+        l_topo.setSpacing(15) # <--- THÊM DÒNG NÀY ĐỂ TẠO KHOẢNG CÁCH
+
+        # --- THÊM ĐOẠN NÀY ---
+        l_topo.addWidget(QLabel("Topology Type:"))
+        self.combo_topology = QComboBox()
+        self.combo_topology.addItems([
+            "Hierarchical (Tree)", 
+            "Mesh (Random)", 
+            "Star (Hub-Spoke)", 
+            "Ring (Loop)"
+        ])
+        l_topo.addWidget(self.combo_topology)
+        # ---------------------
+
         self.btn_gen = QPushButton("Initialize Network")
         self.btn_gen.setStyleSheet("color: #00FFFF; border: 1px solid #00FFFF;")
         self.btn_gen.clicked.connect(self.on_generate_network)
@@ -192,6 +206,7 @@ class MainWindow(QMainWindow):
         # Group 2: Traffic & Analysis
         g_ops = QGroupBox("2. TRAFFIC ANALYSIS")
         l_ops = QVBoxLayout()
+        l_ops.setSpacing(15) # <--- THÊM DÒNG NÀY CHO GROUP 2
         
         l_ops.addWidget(QLabel("Source Node:"))
         self.combo_source = QComboBox()
@@ -217,6 +232,7 @@ class MainWindow(QMainWindow):
         # Group 3: Security
         g_sec = QGroupBox("3. THREAT SIMULATION")
         l_sec = QVBoxLayout()
+        l_sec.setSpacing(15) # <--- THÊM DÒNG NÀY CHO GROUP 3
         l_sec.addWidget(QLabel("Patient Zero:"))
         self.combo_virus = QComboBox()
         l_sec.addWidget(self.combo_virus)
@@ -243,11 +259,30 @@ class MainWindow(QMainWindow):
     # --- EVENT HANDLERS (CORE) ---
 
     def on_generate_network(self):
-        """Sinh mạng mới."""
-        self.simulation_timer.stop()
-        self.current_graph = self.generator.generate_hierarchical_network()
+        """Sinh mạng mới dựa trên kiểu được chọn."""
+        # Dọn dẹp giao diện trước
+        self.reset_visual_state()
+        
+        # Lấy kiểu tô pô từ ComboBox
+        topo_type_text = self.combo_topology.currentText()
+        
+        # Ánh xạ tên hiển thị sang từ khóa (key) nội bộ
+        topo_map = {
+            "Hierarchical (Tree)": "hierarchical",
+            "Mesh (Random)": "mesh",
+            "Star (Hub-Spoke)": "star",
+            "Ring (Loop)": "ring"
+        }
+        # Lấy key, mặc định là hierarchical nếu không tìm thấy
+        topo_key = topo_map.get(topo_type_text, "hierarchical")
+        
+        # Gọi hàm sinh mạng mới trong NetworkGenerator
+        # (Đảm bảo bạn đã cập nhật file utils/network_data.py trước đó)
+        self.current_graph = self.generator.generate_network(topo_key)
+        
+        # Cập nhật giao diện
         self._refresh_ui_data()
-        self.lbl_stats.setText("Network Initialized. Ready for commands.")
+        self.lbl_stats.setText(f"Network Initialized ({topo_type_text}). Ready for commands.")
 
     def _refresh_ui_data(self):
         """Vẽ lại đồ thị và cập nhật ComboBox."""
@@ -262,7 +297,46 @@ class MainWindow(QMainWindow):
                 c.addItems(nodes)
                 c.blockSignals(False)
 
+    def reset_visual_state(self):
+        """Hàm trung tâm để dọn dẹp giao diện về trạng thái mặc định."""
+        # Dừng animation virus nếu đang chạy
+        if self.simulation_timer.isActive():
+            self.simulation_timer.stop()
+        
+        # Reset trạng thái virus
+        self.infection_steps = []
+        self.current_step_index = 0
+        self.infected_history.clear()
+        
+        if self.current_graph:
+            # Khôi phục màu sắc và kích thước mặc định cho NODE
+            for node, data in self.current_graph.nodes(data=True):
+                n_type = data.get('type', 'PC')
+                # Màu mặc định theo loại
+                if n_type == 'PC': color = '#D3D3D3'; size = 250
+                elif n_type == 'Switch': color = '#00BFFF'; size = 350
+                elif n_type == 'Router': color = '#FF4500'; size = 450
+                elif n_type == 'Server': color = '#32CD32'; size = 300 # Thêm Server
+                else: color = '#FFFFFF'; size = 300
+                
+                self.current_graph.nodes[node]['color'] = color
+                self.current_graph.nodes[node]['size'] = size
+            
+            # Khôi phục mặc định cho CẠNH (Edge)
+            for u, v, data in self.current_graph.edges(data=True):
+                # Xóa màu đặc biệt (virus/highlight)
+                if 'color' in data:
+                    del data['color'] 
+                # Xóa trạng thái STP
+                if 'stp_state' in data:
+                    del data['stp_state']
+
+            # Vẽ lại đồ thị sạch sẽ (giữ nguyên vị trí)
+            self.canvas.draw_network(self.current_graph, keep_layout=True)
+            self.lbl_stats.setText("Visual state reset. Ready.")
+
     def on_trace_route(self):
+        self.reset_visual_state() # <--- THÊM DÒNG NÀY
         src, dst = self.combo_source.currentText(), self.combo_target.currentText()
         if src == dst or not src: return
         
@@ -274,6 +348,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Unreachable", "No path found between selected nodes.")
 
     def on_analyze_bandwidth(self):
+        self.reset_visual_state() # <--- THÊM DÒNG NÀY
         src, dst = self.combo_source.currentText(), self.combo_target.currentText()
         if src == dst or not src: return
 
@@ -282,6 +357,7 @@ class MainWindow(QMainWindow):
         self.lbl_stats.setText(f"[BANDWIDTH CHECK]\nFrom: {src}\nTo: {dst}\nMax Capacity: {max_flow} Mbps")
 
     def on_run_stp(self):
+        self.reset_visual_state() # <--- THÊM DÒNG NÀY
         active, blocked = self.stp_logic.compute_spanning_tree(self.current_graph)
         
         # Xóa trạng thái STP cũ (nếu có)
@@ -295,7 +371,7 @@ class MainWindow(QMainWindow):
             self.current_graph[u][v]['stp_state'] = 'blocking'
         
         # Yêu cầu canvas vẽ lại với dữ liệu đồ thị đã được cập nhật
-        self.canvas.draw_network(self.current_graph)
+        self.canvas.draw_network(self.current_graph, keep_layout=True)
         self.lbl_stats.setText(f"[STP MODE]\nActive Links: {len(active)}\nBlocked Links: {len(blocked)}\nLoop-free topology enforced.")
 
     def on_run_audit(self):
@@ -304,6 +380,7 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def on_simulate_virus(self):
+        self.reset_visual_state() # <--- THÊM DÒNG NÀY
         start_node = self.combo_virus.currentText()
         if not start_node: return
         
@@ -344,7 +421,7 @@ class MainWindow(QMainWindow):
             self.infected_history.add(node) # Ghi nhận đã nhiễm
             
         # Vẽ lại đồ thị với màu sắc mới (cả node và edge)
-        self.canvas.draw_network(self.current_graph)
+        self.canvas.draw_network(self.current_graph, keep_layout=True)
         
         nodes_str = ", ".join(newly_infected_nodes)
         self.lbl_stats.setText(f"Step {self.current_step_index + 1}: Virus spreading to {nodes_str}...")
@@ -401,6 +478,7 @@ class MainWindow(QMainWindow):
         if file_path:
             G, msg = FileManager.load_network_from_json(file_path)
             if G:
+                self.reset_visual_state() # <--- THÊM DÒNG NÀY
                 self.current_graph = G
                 self._refresh_ui_data()
                 self.lbl_stats.setText(f"Loaded: {file_path}")
@@ -410,7 +488,8 @@ class MainWindow(QMainWindow):
     def on_export_report(self):
         file_path, _ = QFileDialog.getSaveFileName(self, "Export Report", "audit_log.txt", "Text (*.txt)")
         if file_path:
-            stats = self.generator.get_topology_stats()
+            # Truyền self.current_graph vào hàm get_topology_stats
+            stats = self.generator.get_topology_stats(self.current_graph) # <--- SỬA DÒNG NÀY
             audit = self.auditor_logic.perform_full_audit(self.current_graph)
             ok, msg = ReportGenerator.export_summary(self.current_graph, stats, audit, file_path)
             if ok: QMessageBox.information(self, "Success", f"Report exported to {file_path}")

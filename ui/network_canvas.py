@@ -4,15 +4,16 @@ import matplotlib.pyplot as plt
 # THÊM IMPORT NÀY ĐỂ TẠO VIỀN CHỮ
 import matplotlib.patheffects as path_effects
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+import numpy as np
 from matplotlib.figure import Figure
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 
 # --- CẤU HÌNH HÌNH DÁNG (MATPLOTLIB MARKERS) ---
 SHAPE_MAP = {
-    'Router': 'D', 
-    'Switch': 's',  
-    'Server': '^',  
-    'PC': 'o',      
+    'Router': 'D',
+    'Switch': 's',
+    'Server': '^',
+    'PC': 'o',
 }
 
 class NetworkCanvas(QWidget):
@@ -21,7 +22,7 @@ class NetworkCanvas(QWidget):
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        
+
         # 1. Matplotlib Init (Cyberpunk Style)
         self.figure = Figure(figsize=(8, 6), dpi=100, facecolor='#050505')
         self.ax = self.figure.add_subplot(111)
@@ -37,14 +38,17 @@ class NetworkCanvas(QWidget):
 
         self.current_G = None
         self.current_pos = None
-        
-        # === THÊM DÒNG NÀY ===
-        # Danh sách lưu các đối tượng highlight để xóa sau này
-        self.highlight_artists = [] 
 
-    def draw_network(self, G):
-        """Vẽ mạng và phân loại hình dáng theo thiết bị."""
+        # Danh sách lưu các đối tượng highlight để xóa sau này
+        self.highlight_artists = []
+
+    def draw_network(self, G, keep_layout=False):
+        """Vẽ mạng, với tùy chọn giữ lại layout cũ."""
         try:
+            # === CẢI TIẾN: Xóa danh sách highlight trước khi vẽ lại toàn bộ ===
+            self.clear_highlights()
+            # ===============================================================
+
             self.ax.clear()
             self.ax.axis('off')
             self.current_G = G
@@ -53,8 +57,25 @@ class NetworkCanvas(QWidget):
                 self.canvas.draw()
                 return
 
-            # 1. Layout
-            self.current_pos = nx.spring_layout(G, seed=42, k=0.5, iterations=50)
+            # 1. Layout Logic (CẬP NHẬT ĐỂ GIÃN ĐỀU)
+            if not keep_layout or self.current_pos is None:
+                # Tính toán k dựa trên số lượng node để tự động điều chỉnh độ giãn
+                num_nodes = G.number_of_nodes()
+                if num_nodes > 0:
+                    # Công thức kinh nghiệm: k tỉ lệ nghịch với căn bậc hai của số node
+                    # Giá trị C=2.0 là hệ số giãn, bạn có thể tăng lên 3.0 hoặc 4.0 nếu muốn giãn hơn nữa.
+                    k_val = 2.0 / np.sqrt(num_nodes)
+                else:
+                    k_val = 0.5 # Giá trị mặc định
+
+                # Tăng iterations lên 100 để thuật toán có nhiều thời gian "dàn trang" hơn
+                self.current_pos = nx.spring_layout(G, seed=42, k=k_val, iterations=100, scale=2.0)
+            else:
+                 # (Phần giữ layout cũ khi thêm node thủ công - giữ nguyên)
+                unplaced = [n for n in G.nodes() if n not in self.current_pos]
+                if unplaced:
+                     new_pos = nx.spring_layout(G, pos=self.current_pos, fixed=list(self.current_pos.keys()))
+                     self.current_pos.update(new_pos)
             pos = self.current_pos
 
             # --- LAYER 1: DÂY CÁP (EDGES) - ZORDER=1 ---
@@ -87,8 +108,8 @@ class NetworkCanvas(QWidget):
             for u,v,d in G.edges(data=True):
                 edge_styles.append('dashed' if d.get('stp_state') == 'blocking' else d.get('style', 'solid'))
 
-            nx.draw_networkx_edges(G, pos, ax=self.ax, 
-                                   edge_color=edge_colors, 
+            nx.draw_networkx_edges(G, pos, ax=self.ax,
+                                   edge_color=edge_colors,
                                    width=edge_widths,
                                    style=edge_styles,
                                    alpha=0.8)
@@ -99,12 +120,12 @@ class NetworkCanvas(QWidget):
                 n_type = data.get('type', 'PC')
                 if n_type not in node_groups: node_groups[n_type] = []
                 node_groups[n_type].append(node)
-            
+
             for n_type, nodes_in_group in node_groups.items():
                 shape = SHAPE_MAP.get(n_type, 'o')
                 colors = [G.nodes[n].get('color', '#FFFFFF') for n in nodes_in_group]
                 sizes = [G.nodes[n].get('size', 300) for n in nodes_in_group]
-                
+
                 nx.draw_networkx_nodes(G, pos, ax=self.ax,
                                        nodelist=nodes_in_group,
                                        node_shape=shape,
@@ -116,26 +137,26 @@ class NetworkCanvas(QWidget):
             # --- LAYER 3: NHÃN (LABELS) - ZORDER=3 ---
             # Dịch nhãn xuống một chút nữa (từ 0.08 thành 0.1) để tách khỏi node
             label_pos = {k: (v[0], v[1] - 0.1) for k, v in pos.items()}
-            
+
             # Vẽ nhãn và lấy lại đối tượng text
             text_items = nx.draw_networkx_labels(G, label_pos, ax=self.ax,
                                                  font_size=9,         # Tăng size chữ lên xíu
-                                                 font_color='white', 
+                                                 font_color='white',
                                                  font_weight='bold',  # Chữ đậm hơn
                                                  font_family='sans-serif')
-            
+
             # TẠO HIỆU ỨNG VIỀN ĐEN (HALO) CHO CHỮ
             for _, text_obj in text_items.items():
                 text_obj.set_path_effects([path_effects.withStroke(linewidth=2, foreground='black')])
 
             self.canvas.draw()
-            
+
         except Exception as e:
             print(f"Drawing Error: {e}")
             import traceback
             traceback.print_exc()
 
-    # === THÊM HÀM NÀY VÀO ===
+    # === CÁC HÀM MỚI HOẠT ĐỘNG TỐT ===
     def clear_highlights(self):
         """Xóa sạch các đường highlight cũ trên canvas."""
         # Nếu danh sách rỗng thì không cần làm gì
@@ -147,36 +168,35 @@ class NetworkCanvas(QWidget):
             try:
                 artist.remove()
             except ValueError:
-                # Bỏ qua lỗi nếu đối tượng đã bị xóa từ trước đó
+                # Bỏ qua lỗi nếu đối tượng đã bị xóa từ trước đó (ví dụ do ax.clear())
                 pass
-        
+
         # Làm rỗng danh sách sau khi xóa
         self.highlight_artists.clear()
         # Vẽ lại canvas để cập nhật thay đổi (xóa hình cũ đi)
         self.canvas.draw()
-    # =========================
 
     def highlight_path(self, path_nodes):
         """Highlight đường đi."""
         # === 1. GỌI HÀM XÓA CŨ TRƯỚC ===
         self.clear_highlights()
         # ===============================
-        
+
         if not self.current_G or not path_nodes or not self.current_pos: return
         pos = self.current_pos
 
         # Highlight Edges
         path_edges = list(zip(path_nodes, path_nodes[1:]))
-        
+
         # === 2. LƯU LẠI ĐỐI TƯỢNG DÂY ===
         edge_artists = nx.draw_networkx_edges(self.current_G, pos, ax=self.ax,
-                                              edgelist=path_edges, 
-                                              edge_color='#FF00FF', 
+                                              edgelist=path_edges,
+                                              edge_color='#FF00FF',
                                               width=3.0, alpha=1.0)
         if edge_artists:
             self.highlight_artists.append(edge_artists)
         # ================================
-        
+
         # Highlight Nodes
         for node in path_nodes:
             node_data = self.current_G.nodes[node]
