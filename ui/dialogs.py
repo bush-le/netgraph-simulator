@@ -7,7 +7,7 @@ class AuditReportDialog(QDialog):
     """
     def __init__(self, report_data, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Network Audit Report - TOP SECRET")
+        self.setWindowTitle("Báo Cáo Kiểm Toán Mạng - BẢO MẬT")
         self.resize(500, 400)
         self.setStyleSheet("""
             QDialog { background-color: #0A0A0A; border: 1px solid #00FF00; }
@@ -20,7 +20,7 @@ class AuditReportDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # Header
-        lbl_title = QLabel("/// SYSTEM AUDIT LOG ///")
+        lbl_title = QLabel("/// NHẬT KÝ KIỂM TOÁN HỆ THỐNG ///")
         layout.addWidget(lbl_title)
 
         # Content
@@ -33,33 +33,33 @@ class AuditReportDialog(QDialog):
         self.txt_content.setText(content)
 
         # Close Button
-        btn_close = QPushButton("ACKNOWLEDGE")
+        btn_close = QPushButton("ĐÃ HIỂU")
         btn_close.clicked.connect(self.accept)
         layout.addWidget(btn_close)
 
     def _format_report(self, data):
         """Chuyển đổi dữ liệu dict thành text định dạng kiểu Hacker."""
-        status = "SECURE" if data["is_connected"] and not data["critical_links"] else "VULNERABLE"
+        status = "AN TOÀN" if data["is_connected"] and not data["critical_links"] else "CÓ LỖ HỔNG"
         
         bridges_text = ""
         if data["critical_links"]:
-            bridges_text = "\n[CRITICAL WARNING] SINGLE POINTS OF FAILURE DETECTED:\n"
+            bridges_text = "\n[CẢNH BÁO NGHIÊM TRỌNG] PHÁT HIỆN CÁC ĐIỂM YẾU CHÍ MẠNG (CẦU):\n"
             for u, v in data["critical_links"]:
-                bridges_text += f"  (!) LINK {u} <--> {v}\n"
+                bridges_text += f"  (!) LIÊN KẾT {u} <--> {v}\n"
         else:
-            bridges_text = "\n[OK] No critical single points of failure detected.\n"
+            bridges_text = "\n[OK] Không phát hiện điểm yếu đơn lẻ (cầu) nào.\n"
 
         return (
             f"========================================\n"
-            f"NETWORK HEALTH STATUS: [{status}]\n"
+            f"TRẠNG THÁI AN TOÀN MẠNG: [{status}]\n"
             f"========================================\n\n"
-            f"[-] CONNECTIVITY CHECK:\n"
-            f"    Fully Connected: {str(data['is_connected']).upper()}\n"
-            f"    Partitions:      {data['connected_components']}\n"
-            f"\n[-] RESILIENCE METRICS:\n"
-            f"    Avg Connections: {data['average_redundancy']:.2f} links/device\n"
+            f"[-] KIỂM TRA TÍNH LIÊN THÔNG:\n"
+            f"    Liên thông hoàn toàn: {str(data['is_connected']).upper()}\n"
+            f"    Số phân mảnh mạng:    {data['connected_components']}\n"
+            f"\n[-] CHỈ SỐ PHỤC HỒI (RESILIENCE):\n"
+            f"    Kết nối trung bình: {data['average_redundancy']:.2f} liên kết/thiết bị\n"
             f"{bridges_text}\n"
             f"========================================\n"
-            f"RECOMMENDATION:\n"
-            f"{'Add redundant links.' if not data['is_connected'] or data['critical_links'] else 'Network is stable.'}"
+            f"KHUYẾN NGHỊ:\n"
+            f"{'Cần thêm các liên kết dự phòng để tăng độ tin cậy.' if not data['is_connected'] or data['critical_links'] else 'Mạng đang hoạt động ổn định.'}"
         )
