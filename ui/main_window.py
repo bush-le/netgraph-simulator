@@ -348,13 +348,28 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Không thể tới", "Không tìm thấy đường đi giữa các nút đã chọn.") # Đã Việt hóa
 
     def on_analyze_bandwidth(self):
-        self.reset_visual_state() # <--- THÊM DÒNG NÀY
+        self.reset_visual_state() # Dọn dẹp giao diện
+        
         src, dst = self.combo_source.currentText(), self.combo_target.currentText()
-        if src == dst or not src: return
+        
+        # Kiểm tra dữ liệu đầu vào
+        if src == dst or not src or not dst: 
+            QMessageBox.warning(self, "Lỗi", "Vui lòng chọn Nút Nguồn và Nút Đích khác nhau.")
+            return
 
+        # 1. Tính toán Băng thông tối đa (Logic Toán học)
         max_flow, _ = self.bandwidth_logic.analyze_max_bandwidth(self.current_graph, src, dst)
-        self.canvas.highlight_path([src, dst]) # Highlight endpoints
-        self.lbl_stats.setText(f"[KIỂM TRA BĂNG THÔNG]\nTừ: {src}\nĐến: {dst}\nDung lượng tối đa: {max_flow} Mbps") # Đã Việt hóa
+
+        # 2. Tìm đường đi ngắn nhất để làm minh họa (Visual)
+        # (Chúng ta cần một đường dẫn hợp lệ để vẽ lên bản đồ, tránh lỗi vẽ cạnh không tồn tại)
+        path, _ = self.router_logic.find_shortest_path(self.current_graph, src, dst)
+
+        # 3. Vẽ đường minh họa lên Canvas
+        if path:
+            self.canvas.highlight_path(path)
+        
+        # 4. Hiển thị kết quả tính toán
+        self.lbl_stats.setText(f"[KIỂM TRA BĂNG THÔNG]\nTừ: {src}\nĐến: {dst}\nDung lượng tối đa: {max_flow} Mbps")
 
     def on_run_stp(self):
         self.reset_visual_state() # <--- THÊM DÒNG NÀY
