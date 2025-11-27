@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLabel, QFrame, QMessageBox, QComboBox, 
-                             QGroupBox, QFileDialog, QMenuBar, QMenu)
+                             QGroupBox, QFileDialog, QMenuBar, QMenu, QTextEdit, QScrollArea)
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt, QTimer
 
@@ -148,30 +148,50 @@ class MainWindow(QMainWindow):
         acad_menu.addAction(action_euler)
 
     def _init_layout(self):
-        """Khởi tạo bố cục chính."""
+        """Khởi tạo bố cục chính (Đã thêm Thanh Cuộn)."""
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_layout = QHBoxLayout(main_widget)
         main_layout.setContentsMargins(5, 5, 5, 5)
         main_layout.setSpacing(5)
 
-        # === LEFT PANEL ===
-        control_panel = QFrame()
-        control_panel.setFixedWidth(300)
-        control_panel.setStyleSheet("background-color: #0A0A0A; border-right: 1px solid #333;")
-        panel_layout = QVBoxLayout(control_panel)
+        # === TẠO VÙNG CUỘN (SCROLL AREA) CHO CỘT TRÁI ===
+        # Giúp giao diện không bị vỡ khi có quá nhiều nút
+        scroll_area = QScrollArea()
+        scroll_area.setFixedWidth(320) # Tăng nhẹ độ rộng để chứa thanh cuộn
+        scroll_area.setWidgetResizable(True)
+        # Style cho thanh cuộn để hợp với nền đen
+        scroll_area.setStyleSheet("""
+            QScrollArea { border: none; background-color: #0A0A0A; }
+            QScrollBar:vertical { border: none; background: #111; width: 8px; margin: 0px; }
+            QScrollBar::handle:vertical { background: #444; min-height: 20px; border-radius: 4px; }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+        """)
+
+        # Widget chứa nội dung thực sự bên trong vùng cuộn
+        control_content_widget = QWidget()
+        control_content_widget.setStyleSheet("background-color: #0A0A0A;") 
+        
+        # Layout dọc cho các nút bấm, sẽ được đặt vào control_content_widget
+        panel_layout = QVBoxLayout(control_content_widget)
         panel_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        panel_layout.setContentsMargins(10, 10, 10, 10)
+
+        # Gắn widget chứa nội dung vào vùng cuộn
+        scroll_area.setWidget(control_content_widget)
+
+        # --- BẮT ĐẦU THÊM CÁC NÚT VÀO `panel_layout` ---
 
         # Header
         lbl_title = QLabel("NETGRAPH\nSENTINEL")
-        lbl_title.setStyleSheet("font-size: 24px; color: #FF00FF; font-weight: bold; margin-bottom: 10px;")
+        lbl_title.setStyleSheet("font-size: 24px; color: #FF00FF; font-weight: bold; margin-bottom: 5px;")
         lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         panel_layout.addWidget(lbl_title)
 
         # Group 1: Topology
         g_topo = QGroupBox("1. ĐIỀU KHIỂN CẤU TRÚC") # Đã Việt hóa
         l_topo = QVBoxLayout()
-        l_topo.setSpacing(15) # <--- THÊM DÒNG NÀY ĐỂ TẠO KHOẢNG CÁCH
+        l_topo.setSpacing(10)
 
         # --- THÊM ĐOẠN NÀY ---
         l_topo.addWidget(QLabel("Loại Cấu Trúc:")) # Đã Việt hóa
@@ -206,7 +226,7 @@ class MainWindow(QMainWindow):
         # Group 2: Traffic & Analysis
         g_ops = QGroupBox("2. PHÂN TÍCH LƯU LƯỢNG") # Đã Việt hóa
         l_ops = QVBoxLayout()
-        l_ops.setSpacing(15) # <--- THÊM DÒNG NÀY CHO GROUP 2
+        l_ops.setSpacing(10)
         
         l_ops.addWidget(QLabel("Nút Nguồn:")) # Đã Việt hóa
         self.combo_source = QComboBox()
@@ -232,7 +252,7 @@ class MainWindow(QMainWindow):
         # Group 3: Security
         g_sec = QGroupBox("3. MÔ PHỎNG MỐI ĐE DỌA") # Đã Việt hóa
         l_sec = QVBoxLayout()
-        l_sec.setSpacing(15) # <--- THÊM DÒNG NÀY CHO GROUP 3
+        l_sec.setSpacing(10)
         l_sec.addWidget(QLabel("Bệnh Nhân Số 0:")) # Đã Việt hóa
         self.combo_virus = QComboBox()
         l_sec.addWidget(self.combo_virus)
@@ -245,15 +265,27 @@ class MainWindow(QMainWindow):
         panel_layout.addWidget(g_sec)
 
         # Status Log
-        self.lbl_stats = QLabel("Hệ thống sẵn sàng...") # Đã Việt hóa
-        self.lbl_stats.setWordWrap(True)
-        self.lbl_stats.setStyleSheet("color: #888; font-size: 11px; margin-top: 10px;")
+        # Status Log (Dùng QTextEdit để không bị tràn chữ)
+        self.lbl_stats = QTextEdit()
+        self.lbl_stats.setReadOnly(True) # Chỉ đọc
+        self.lbl_stats.setText("Hệ thống sẵn sàng...")
+        self.lbl_stats.setFixedHeight(100) # Chiều cao cố định
+        # Style cho khung Log
+        self.lbl_stats.setStyleSheet("""
+            background-color: #0A0A0A; 
+            color: #888; 
+            font-family: 'Consolas'; 
+            font-size: 11px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        """)
         panel_layout.addWidget(self.lbl_stats)
 
         # === RIGHT PANEL (CANVAS) ===
         self.canvas = NetworkCanvas()
         
-        main_layout.addWidget(control_panel)
+        # Thêm Scroll Area (chứa panel trái) và Canvas (panel phải) vào layout chính
+        main_layout.addWidget(scroll_area)
         main_layout.addWidget(self.canvas, stretch=1)
 
     # --- EVENT HANDLERS (CORE) ---
