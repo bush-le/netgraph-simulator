@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # --- 1. CONFIGURATION ---
-        self.setWindowTitle("NetGraph Sentinel - Ultimate Edition (Multi-Topology)")
+        self.setWindowTitle("NetGraph Sentinel - Phiên Bản Tối Thượng (Đa Cấu Trúc)") # Đã Việt hóa
         self.resize(1366, 768)
         
         # Cyberpunk Stylesheet (Full Fix)
@@ -97,53 +97,53 @@ class MainWindow(QMainWindow):
         """)
 
         # === 1. File Menu ===
-        file_menu = menu_bar.addMenu("FILE")
+        file_menu = menu_bar.addMenu("TỆP TIN") # Đã Việt hóa
         
-        action_open = QAction("Open Topology (.json)", self)
+        action_open = QAction("Mở Sơ Đồ (.json)", self) # Đã Việt hóa
         action_open.setShortcut("Ctrl+O")
         action_open.triggered.connect(self.on_open_file)
         file_menu.addAction(action_open)
 
-        action_save = QAction("Save Topology (.json)", self)
+        action_save = QAction("Lưu Sơ Đồ (.json)", self) # Đã Việt hóa
         action_save.setShortcut("Ctrl+S")
         action_save.triggered.connect(self.on_save_file)
         file_menu.addAction(action_save)
         
         file_menu.addSeparator()
 
-        action_export = QAction("Export Report (.txt)", self)
+        action_export = QAction("Xuất Báo Cáo (.txt)", self) # Đã Việt hóa
         action_export.setShortcut("Ctrl+E")
         action_export.triggered.connect(self.on_export_report)
         file_menu.addAction(action_export)
         
         file_menu.addSeparator()
         
-        action_exit = QAction("Exit", self)
+        action_exit = QAction("Thoát", self) # Đã Việt hóa
         action_exit.triggered.connect(self.close)
         file_menu.addAction(action_exit)
 
         # === 2. Academic Menu (NEW - Đáp ứng yêu cầu còn thiếu) ===
-        acad_menu = menu_bar.addMenu("ACADEMIC TOOLS")
+        acad_menu = menu_bar.addMenu("CÔNG CỤ HỌC THUẬT") # Đã Việt hóa
 
         # 4. Duyệt DFS
-        action_dfs = QAction("Run DFS Traversal", self)
+        action_dfs = QAction("Chạy Duyệt DFS", self) # Đã Việt hóa
         action_dfs.triggered.connect(self.on_run_dfs)
         acad_menu.addAction(action_dfs)
 
         # 5. Kiểm tra 2 phía
-        action_bipartite = QAction("Check Bipartite Graph", self)
+        action_bipartite = QAction("Kiểm tra Đồ thị 2 Phía", self) # Đã Việt hóa
         action_bipartite.triggered.connect(self.on_check_bipartite)
         acad_menu.addAction(action_bipartite)
 
         # 6. Biểu diễn đồ thị
-        action_reps = QAction("View Graph Representations (Matrix/List)", self)
+        action_reps = QAction("Xem Biểu diễn Đồ thị (Ma trận/Danh sách)", self) # Đã Việt hóa
         action_reps.triggered.connect(self.on_view_representations)
         acad_menu.addAction(action_reps)
 
         acad_menu.addSeparator()
 
         # 7.4 & 7.5 Euler
-        action_euler = QAction("Analyze Eulerian Path/Circuit", self)
+        action_euler = QAction("Phân tích Đường đi/Chu trình Euler", self) # Đã Việt hóa
         action_euler.triggered.connect(self.on_find_euler)
         acad_menu.addAction(action_euler)
 
@@ -169,33 +169,33 @@ class MainWindow(QMainWindow):
         panel_layout.addWidget(lbl_title)
 
         # Group 1: Topology
-        g_topo = QGroupBox("1. TOPOLOGY CONTROL")
+        g_topo = QGroupBox("1. ĐIỀU KHIỂN CẤU TRÚC") # Đã Việt hóa
         l_topo = QVBoxLayout()
         l_topo.setSpacing(15) # <--- THÊM DÒNG NÀY ĐỂ TẠO KHOẢNG CÁCH
 
         # --- THÊM ĐOẠN NÀY ---
-        l_topo.addWidget(QLabel("Topology Type:"))
+        l_topo.addWidget(QLabel("Loại Cấu Trúc:")) # Đã Việt hóa
         self.combo_topology = QComboBox()
         self.combo_topology.addItems([
-            "Hierarchical (Tree)", 
-            "Mesh (Random)", 
-            "Star (Hub-Spoke)", 
-            "Ring (Loop)"
+            "Phân Cấp (Tree)", # Đã Việt hóa
+            "Lưới (Random)",   # Đã Việt hóa
+            "Hình Sao (Hub-Spoke)", # Đã Việt hóa
+            "Vòng Tròn (Loop)" # Đã Việt hóa
         ])
         l_topo.addWidget(self.combo_topology)
         # ---------------------
 
-        self.btn_gen = QPushButton("Initialize Network")
+        self.btn_gen = QPushButton("Khởi Tạo Mạng") # Đã Việt hóa
         self.btn_gen.setStyleSheet("color: #00FFFF; border: 1px solid #00FFFF;")
         self.btn_gen.clicked.connect(self.on_generate_network)
         l_topo.addWidget(self.btn_gen)
         
-        self.btn_stp = QPushButton("Activate STP (Anti-Loop)")
+        self.btn_stp = QPushButton("Kích hoạt STP (Chống Vòng Lặp)") # Đã Việt hóa
         self.btn_stp.setStyleSheet("color: #ADFF2F; border: 1px solid #ADFF2F;")
         self.btn_stp.clicked.connect(self.on_run_stp)
         l_topo.addWidget(self.btn_stp)
         
-        self.btn_audit = QPushButton("Run System Audit")
+        self.btn_audit = QPushButton("Chạy Kiểm Toán Hệ Thống") # Đã Việt hóa
         self.btn_audit.setStyleSheet("color: #00FF00; border: 1px dashed #00FF00;")
         self.btn_audit.clicked.connect(self.on_run_audit)
         l_topo.addWidget(self.btn_audit)
@@ -204,22 +204,22 @@ class MainWindow(QMainWindow):
         panel_layout.addWidget(g_topo)
 
         # Group 2: Traffic & Analysis
-        g_ops = QGroupBox("2. TRAFFIC ANALYSIS")
+        g_ops = QGroupBox("2. PHÂN TÍCH LƯU LƯỢNG") # Đã Việt hóa
         l_ops = QVBoxLayout()
         l_ops.setSpacing(15) # <--- THÊM DÒNG NÀY CHO GROUP 2
         
-        l_ops.addWidget(QLabel("Source Node:"))
+        l_ops.addWidget(QLabel("Nút Nguồn:")) # Đã Việt hóa
         self.combo_source = QComboBox()
         l_ops.addWidget(self.combo_source)
         
-        l_ops.addWidget(QLabel("Target Node:"))
+        l_ops.addWidget(QLabel("Nút Đích:")) # Đã Việt hóa
         self.combo_target = QComboBox()
         l_ops.addWidget(self.combo_target)
         
         h_btn_layout = QHBoxLayout()
-        self.btn_trace = QPushButton("Trace Route")
+        self.btn_trace = QPushButton("Dò Đường") # Đã Việt hóa
         self.btn_trace.clicked.connect(self.on_trace_route)
-        self.btn_bw = QPushButton("Max Bandwidth")
+        self.btn_bw = QPushButton("Băng Thông Tối Đa") # Đã Việt hóa
         self.btn_bw.setStyleSheet("color: #FFA500; border: 1px solid #FFA500;")
         self.btn_bw.clicked.connect(self.on_analyze_bandwidth)
         h_btn_layout.addWidget(self.btn_trace)
@@ -230,14 +230,14 @@ class MainWindow(QMainWindow):
         panel_layout.addWidget(g_ops)
 
         # Group 3: Security
-        g_sec = QGroupBox("3. THREAT SIMULATION")
+        g_sec = QGroupBox("3. MÔ PHỎNG MỐI ĐE DỌA") # Đã Việt hóa
         l_sec = QVBoxLayout()
         l_sec.setSpacing(15) # <--- THÊM DÒNG NÀY CHO GROUP 3
-        l_sec.addWidget(QLabel("Patient Zero:"))
+        l_sec.addWidget(QLabel("Bệnh Nhân Số 0:")) # Đã Việt hóa
         self.combo_virus = QComboBox()
         l_sec.addWidget(self.combo_virus)
         
-        self.btn_virus = QPushButton("⚠️ EXECUTE VIRUS ATTACK")
+        self.btn_virus = QPushButton("⚠️ THỰC THI TẤN CÔNG VIRUS") # Đã Việt hóa
         self.btn_virus.setStyleSheet("background-color: #330000; color: #FF0000; border: 1px solid #FF0000; font-weight: bold;")
         self.btn_virus.clicked.connect(self.on_simulate_virus)
         l_sec.addWidget(self.btn_virus)
@@ -245,7 +245,7 @@ class MainWindow(QMainWindow):
         panel_layout.addWidget(g_sec)
 
         # Status Log
-        self.lbl_stats = QLabel("System Ready...")
+        self.lbl_stats = QLabel("Hệ thống sẵn sàng...") # Đã Việt hóa
         self.lbl_stats.setWordWrap(True)
         self.lbl_stats.setStyleSheet("color: #888; font-size: 11px; margin-top: 10px;")
         panel_layout.addWidget(self.lbl_stats)
@@ -268,10 +268,10 @@ class MainWindow(QMainWindow):
         
         # Ánh xạ tên hiển thị sang từ khóa (key) nội bộ
         topo_map = {
-            "Hierarchical (Tree)": "hierarchical",
-            "Mesh (Random)": "mesh",
-            "Star (Hub-Spoke)": "star",
-            "Ring (Loop)": "ring"
+            "Phân Cấp (Tree)": "hierarchical", # Đã Việt hóa key map
+            "Lưới (Random)": "mesh",           # Đã Việt hóa key map
+            "Hình Sao (Hub-Spoke)": "star",    # Đã Việt hóa key map
+            "Vòng Tròn (Loop)": "ring"         # Đã Việt hóa key map
         }
         # Lấy key, mặc định là hierarchical nếu không tìm thấy
         topo_key = topo_map.get(topo_type_text, "hierarchical")
@@ -282,7 +282,7 @@ class MainWindow(QMainWindow):
         
         # Cập nhật giao diện
         self._refresh_ui_data()
-        self.lbl_stats.setText(f"Network Initialized ({topo_type_text}). Ready for commands.")
+        self.lbl_stats.setText(f"Đã khởi tạo mạng ({topo_type_text}). Sẵn sàng chờ lệnh.") # Đã Việt hóa
 
     def _refresh_ui_data(self):
         """Vẽ lại đồ thị và cập nhật ComboBox."""
@@ -333,7 +333,7 @@ class MainWindow(QMainWindow):
 
             # Vẽ lại đồ thị sạch sẽ (giữ nguyên vị trí)
             self.canvas.draw_network(self.current_graph, keep_layout=True)
-            self.lbl_stats.setText("Visual state reset. Ready.")
+            self.lbl_stats.setText("Đã đặt lại trạng thái hiển thị. Sẵn sàng.") # Đã Việt hóa
 
     def on_trace_route(self):
         self.reset_visual_state() # <--- THÊM DÒNG NÀY
@@ -343,9 +343,9 @@ class MainWindow(QMainWindow):
         path, lat = self.router_logic.find_shortest_path(self.current_graph, src, dst)
         if path:
             self.canvas.highlight_path(path)
-            self.lbl_stats.setText(f"[ROUTING RESULT]\nPath: {' -> '.join(path)}\nTotal Latency: {lat} ms")
+            self.lbl_stats.setText(f"[KẾT QUẢ ĐỊNH TUYẾN]\nĐường đi: {' -> '.join(path)}\nTổng độ trễ: {lat} ms") # Đã Việt hóa
         else:
-            QMessageBox.warning(self, "Unreachable", "No path found between selected nodes.")
+            QMessageBox.warning(self, "Không thể tới", "Không tìm thấy đường đi giữa các nút đã chọn.") # Đã Việt hóa
 
     def on_analyze_bandwidth(self):
         self.reset_visual_state() # <--- THÊM DÒNG NÀY
@@ -354,7 +354,7 @@ class MainWindow(QMainWindow):
 
         max_flow, _ = self.bandwidth_logic.analyze_max_bandwidth(self.current_graph, src, dst)
         self.canvas.highlight_path([src, dst]) # Highlight endpoints
-        self.lbl_stats.setText(f"[BANDWIDTH CHECK]\nFrom: {src}\nTo: {dst}\nMax Capacity: {max_flow} Mbps")
+        self.lbl_stats.setText(f"[KIỂM TRA BĂNG THÔNG]\nTừ: {src}\nĐến: {dst}\nDung lượng tối đa: {max_flow} Mbps") # Đã Việt hóa
 
     def on_run_stp(self):
         self.reset_visual_state() # <--- THÊM DÒNG NÀY
@@ -372,7 +372,7 @@ class MainWindow(QMainWindow):
         
         # Yêu cầu canvas vẽ lại với dữ liệu đồ thị đã được cập nhật
         self.canvas.draw_network(self.current_graph, keep_layout=True)
-        self.lbl_stats.setText(f"[STP MODE]\nActive Links: {len(active)}\nBlocked Links: {len(blocked)}\nLoop-free topology enforced.")
+        self.lbl_stats.setText(f"[CHẾ ĐỘ STP]\nLiên kết Hoạt động: {len(active)}\nLiên kết Bị chặn: {len(blocked)}\nĐã thực thi cấu trúc không vòng lặp.") # Đã Việt hóa
 
     def on_run_audit(self):
         report = self.auditor_logic.perform_full_audit(self.current_graph)
@@ -389,14 +389,14 @@ class MainWindow(QMainWindow):
             self.canvas.draw_network(self.current_graph) # Reset visual
             self.current_step_index = 0
             self.infected_history.clear() # <--- THÊM DÒNG NÀY (Reset lịch sử)
-            self.lbl_stats.setText(f"⚠️ VIRUS DETECTED at {start_node}!")
+            self.lbl_stats.setText(f"⚠️ PHÁT HIỆN VIRUS TẠI {start_node}!") # Đã Việt hóa
             self.simulation_timer.start(500)
 
     def run_simulation_step(self):
         """Thực hiện một bước mô phỏng lây lan virus."""
         if self.current_step_index >= len(self.infection_steps):
             self.simulation_timer.stop()
-            self.lbl_stats.setText("NETWORK COMPROMISED. Simulation Complete.")
+            self.lbl_stats.setText("MẠNG ĐÃ BỊ XÂM NHẬP HOÀN TOÀN. Mô phỏng kết thúc.") # Đã Việt hóa
             return
 
         newly_infected_nodes = self.infection_steps[self.current_step_index]
@@ -424,7 +424,7 @@ class MainWindow(QMainWindow):
         self.canvas.draw_network(self.current_graph, keep_layout=True)
         
         nodes_str = ", ".join(newly_infected_nodes)
-        self.lbl_stats.setText(f"Step {self.current_step_index + 1}: Virus spreading to {nodes_str}...")
+        self.lbl_stats.setText(f"Bước {self.current_step_index + 1}: Virus đang lây lan sang {nodes_str}...") # Đã Việt hóa
         self.current_step_index += 1
 
     # --- EVENT HANDLERS (ACADEMIC TOOLS) ---
@@ -447,49 +447,49 @@ class MainWindow(QMainWindow):
         # Lấy nút đang chọn ở Source làm nút bắt đầu DFS
         start_node = self.combo_source.currentText()
         result = self.acad_logic.run_dfs(self.current_graph, start_node)
-        self._show_academic_result("DFS Traversal Result", result)
+        self._show_academic_result("Kết quả duyệt DFS", result) # Đã Việt hóa
 
     def on_check_bipartite(self):
         """Xử lý kiểm tra đồ thị 2 phía."""
         result = self.acad_logic.check_bipartite(self.current_graph)
-        self._show_academic_result("Bipartite Graph Check", result)
+        self._show_academic_result("Kiểm tra Đồ thị 2 Phía", result) # Đã Việt hóa
 
     def on_view_representations(self):
         """Xử lý xem các biểu diễn đồ thị."""
         result = self.acad_logic.get_representations(self.current_graph)
-        self._show_academic_result("Graph Representations", result)
+        self._show_academic_result("Biểu diễn Đồ thị", result) # Đã Việt hóa
 
     def on_find_euler(self):
         """Xử lý tìm chu trình Euler."""
         result = self.acad_logic.find_eulerian(self.current_graph)
-        self._show_academic_result("Eulerian Path/Circuit Analysis", result)
+        self._show_academic_result("Phân tích Đường đi/Chu trình Euler", result) # Đã Việt hóa
 
     # --- FILE OPERATIONS ---
 
     def on_save_file(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save Topology", "network_config.json", "JSON (*.json)")
+        file_path, _ = QFileDialog.getSaveFileName(self, "Lưu Sơ Đồ", "network_config.json", "JSON (*.json)") # Đã Việt hóa
         if file_path:
             ok, msg = FileManager.save_network_to_json(self.current_graph, file_path)
-            if ok: self.lbl_stats.setText(f"Saved: {file_path}")
-            else: QMessageBox.critical(self, "Error", msg)
+            if ok: self.lbl_stats.setText(f"Đã lưu: {file_path}") # Đã Việt hóa
+            else: QMessageBox.critical(self, "Lỗi", msg) # Đã Việt hóa
 
     def on_open_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Topology", "", "JSON (*.json)")
+        file_path, _ = QFileDialog.getOpenFileName(self, "Mở Sơ Đồ", "", "JSON (*.json)") # Đã Việt hóa
         if file_path:
             G, msg = FileManager.load_network_from_json(file_path)
             if G:
                 self.reset_visual_state() # <--- THÊM DÒNG NÀY
                 self.current_graph = G
                 self._refresh_ui_data()
-                self.lbl_stats.setText(f"Loaded: {file_path}")
+                self.lbl_stats.setText(f"Đã tải: {file_path}") # Đã Việt hóa
             else:
-                QMessageBox.critical(self, "Error", msg)
+                QMessageBox.critical(self, "Lỗi", msg) # Đã Việt hóa
 
     def on_export_report(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Export Report", "audit_log.txt", "Text (*.txt)")
+        file_path, _ = QFileDialog.getSaveFileName(self, "Xuất Báo Cáo", "audit_log.txt", "Text (*.txt)") # Đã Việt hóa
         if file_path:
             # Truyền self.current_graph vào hàm get_topology_stats
             stats = self.generator.get_topology_stats(self.current_graph) # <--- SỬA DÒNG NÀY
             audit = self.auditor_logic.perform_full_audit(self.current_graph)
             ok, msg = ReportGenerator.export_summary(self.current_graph, stats, audit, file_path)
-            if ok: QMessageBox.information(self, "Success", f"Report exported to {file_path}")
+            if ok: QMessageBox.information(self, "Thành công", f"Đã xuất báo cáo ra {file_path}") # Đã Việt hóa
